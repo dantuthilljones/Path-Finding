@@ -21,11 +21,11 @@ public abstract class HeuristicPathAlgorithm extends PathAlgorithm {
 
 	public void setHeuristic(int type) {
 		if(type == Heuristic.DIAGONAL) {
-			heuristic = new DiagonalDistance(map.goalX, map.goalY);
+			heuristic = new DiagonalDistance(map.getGoal());
 		} else if(type == Heuristic.ABSOLUTE) {
-			heuristic = new AbsoluteDistance(map.goalX, map.goalY);
+			heuristic = new AbsoluteDistance(map.getGoal());
 		} else if(type == Heuristic.MANHATTAN) {
-			heuristic = new ManhattanDistance(map.goalX, map.goalY);
+			heuristic = new ManhattanDistance(map.getGoal());
 		}
 	}
 

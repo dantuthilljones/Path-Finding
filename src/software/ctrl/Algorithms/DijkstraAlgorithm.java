@@ -1,5 +1,6 @@
 package software.ctrl.Algorithms;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
@@ -12,9 +13,10 @@ public class DijkstraAlgorithm extends PathAlgorithm {
 
 	public DijkstraAlgorithm(Map map) {
 		super(map);
-
-		fringeQueue.add(new DijkstraVertex(map.startX, map.startY, 0, 0, null));
-		fringe[map.startX][map.startY] = true;
+		
+		Point start = map.getStart();
+		fringeQueue.add(new DijkstraVertex(start.x, start.y, 0, 0, null));
+		fringe[start.x][start.y] = true;
 	}
 
 	@Override
@@ -29,15 +31,15 @@ public class DijkstraAlgorithm extends PathAlgorithm {
 
 		//non diagonals
 		for(byte[] i: Map.iter) {
-			if(!map.walls[v.x + i[0] ][v.y + i[1] ][ i[2] ] && !visitedNodes[v.x  + i[3] ][v.y + i[4] ]) {
+			if(!map.isWall(v.x + i[0], v.y + i[1], i[2]) && !visitedNodes[v.x  + i[3] ][v.y + i[4] ]) {
 				if(visitNode(new DijkstraVertex( v.x + i[3], v.y + i[4], (int) v.distanceStart +1, v.distanceStart +1, v))) return true;
 			}
 		}
 
 		//diagonals
 		if(diagonals) for(byte[] i: Map.iterDiag) {
-			if(!map.walls[v.x + i[0] ][v.y + i[1] ][Map.HORIZONTAL] && !map.walls[v.x + i[0] ][v.y + i[1] ][Map.VERTICAL]
-					&& !map.walls[v.x + i[0] -1][v.y + i[1] ][Map.HORIZONTAL] && !map.walls[v.x + i[0] ][v.y + i[1] -1][Map.VERTICAL]
+			if(!map.isWall(v.x + i[0], v.y + i[1], Map.HORIZONTAL) && !map.isWall(v.x + i[0], v.y + i[1],Map.VERTICAL)
+					&& !map.isWall(v.x + i[0] -1, v.y + i[1], Map.HORIZONTAL) && !map.isWall(v.x + i[0], v.y + i[1] -1, Map.VERTICAL)
 							&& !visitedNodes[v.x  + i[2]][v.y + i[3]]) {
 				if(visitNode(new DijkstraVertex( v.x + i[2], v.y + i[3],  (int) v.distanceStart +1, v.distanceStart +1, v))) return true;
 			}
@@ -56,7 +58,7 @@ public class DijkstraAlgorithm extends PathAlgorithm {
 			fringe[newVertex.x][newVertex.y] = true;
 		}
 		
-		if(newVertex.x == map.goalX && newVertex.y == map.goalY) {
+		if(newVertex.x == map.getGoal().x && newVertex.y == map.getGoal().y) {
 			computePath(newVertex);
 			return true;
 		}
@@ -79,16 +81,18 @@ public class DijkstraAlgorithm extends PathAlgorithm {
 	@Override
 	public void reset(Map m) {
 		super.reset(m);
+		Point start = m.getStart();
 		fringeQueue.clear();
-		fringeQueue.add(new DijkstraVertex(map.startX, map.startY, 0, 0, null));
-		fringe[map.startX][map.startY] = true;
+		fringeQueue.add(new DijkstraVertex(start.x, start.y, 0, 0, null));
+		fringe[start.x][start.y] = true;
 	}
 	
 	@Override
 	public void reset() {
 		super.reset();
+		Point start = map.getStart();
 		fringeQueue.clear();
-		fringeQueue.add(new DijkstraVertex(map.startX, map.startY, 0, 0, null));
-		fringe[map.startX][map.startY] = true;
+		fringeQueue.add(new DijkstraVertex(start.x, start.y, 0, 0, null));
+		fringe[start.x][start.y] = true;
 	}
 }

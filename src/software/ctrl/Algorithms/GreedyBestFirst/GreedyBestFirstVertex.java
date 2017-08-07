@@ -17,6 +17,6 @@ public class GreedyBestFirstVertex extends Vertex implements Comparable<GreedyBe
 
 	@Override
 	public int compareTo(GreedyBestFirstVertex v) {
-		return Double.compare(distanceGoal, v.distanceGoal);
+		return java.lang.Double.compare(distanceGoal, v.distanceGoal);
 	}
 }

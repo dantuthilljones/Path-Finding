@@ -1,8 +1,11 @@
 package software.ctrl.Algorithms;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
+import software.ctrl.Algorithms.AStar.AStarVertex;
+import software.ctrl.Algorithms.Dijkstras.DijkstraVertex;
 import software.ctrl.Algorithms.GreedyBestFirst.GreedyBestFirstVertex;
 import software.ctrl.Heuristics.AbsoluteDistance;
 import software.ctrl.PathFinding.Map;
@@ -14,10 +17,12 @@ public class GreedyBestFirstAlgorithm extends HeuristicPathAlgorithm {
 	public GreedyBestFirstAlgorithm(Map map) {
 		super(map);
 		
-		heuristic = new AbsoluteDistance(map.goalX, map.goalY);
+		Point start = map.getStart();
+		Point goal = map.getGoal();
+		heuristic = new AbsoluteDistance(goal.x, goal.y);
 
-		fringe[map.startX][map.startY] = true;
-		fringeQueue.add(new GreedyBestFirstVertex(map.startX, map.startY, 0, heuristic, null));
+		fringeQueue.add(new GreedyBestFirstVertex(start.x, start.y, 0, heuristic, null));
+		fringe[start.x][start.y] = true;
 	}
 	
 	@Override
@@ -31,15 +36,15 @@ public class GreedyBestFirstAlgorithm extends HeuristicPathAlgorithm {
 
 		//non diagonals
 		for(byte[] i: Map.iter) {
-			if(!map.walls[v.x + i[0] ][v.y + i[1] ][ i[2] ] && !visitedNodes[v.x  + i[3] ][v.y + i[4] ]) {
+			if(!map.isWall(v.x + i[0], v.y + i[1], i[2]) && !visitedNodes[v.x  + i[3] ][v.y + i[4] ]) {
 				if(visitNode(new GreedyBestFirstVertex( v.x + i[3], v.y + i[4], v.depth +1, heuristic, v))) return true;
 			}
 		}
 
 		//diagonals
 		if(diagonals) for(byte[] i: Map.iterDiag) {
-			if(!map.walls[v.x + i[0] ][v.y + i[1] ][Map.HORIZONTAL] && !map.walls[v.x + i[0] ][v.y + i[1] ][Map.VERTICAL]
-					&& !map.walls[v.x + i[0] -1][v.y + i[1] ][Map.HORIZONTAL] && !map.walls[v.x + i[0] ][v.y + i[1] -1][Map.VERTICAL]
+			if(!map.isWall(v.x + i[0], v.y + i[1], Map.HORIZONTAL) && !map.isWall(v.x + i[0], v.y + i[1],Map.VERTICAL)
+					&& !map.isWall(v.x + i[0] -1, v.y + i[1], Map.HORIZONTAL) && !map.isWall(v.x + i[0], v.y + i[1] -1, Map.VERTICAL)
 							&& !visitedNodes[v.x  + i[2]][v.y + i[3]]) {
 				if(visitNode(new GreedyBestFirstVertex( v.x + i[2], v.y + i[3], v.depth +1, heuristic, v))) return true;
 			}
@@ -58,7 +63,7 @@ public class GreedyBestFirstAlgorithm extends HeuristicPathAlgorithm {
 			fringe[newVertex.x][newVertex.y] = true;
 		}
 		
-		if(newVertex.x == map.goalX && newVertex.y == map.goalY) {
+		if(newVertex.x == map.getGoal().x && newVertex.y == map.getGoal().y) {
 			computePath(newVertex);
 			return true;
 		}
@@ -81,17 +86,18 @@ public class GreedyBestFirstAlgorithm extends HeuristicPathAlgorithm {
 	@Override
 	public void reset(Map m) {
 		super.reset(m);
+		Point start = m.getStart();
 		fringeQueue.clear();
-		fringeQueue.add(new GreedyBestFirstVertex(map.startX, map.startY, 0, heuristic, null));
-		fringe[map.startX][map.startY] = true;
+		fringeQueue.add(new GreedyBestFirstVertex(start.x, start.y, 0, heuristic, null));
+		fringe[start.x][start.y] = true;
 	}
 	
 	@Override
 	public void reset() {
 		super.reset();
+		Point start = map.getStart();
 		fringeQueue.clear();
-		fringeQueue.add(new GreedyBestFirstVertex(map.startX, map.startY, 0, heuristic, null));
-		fringe[map.startX][map.startY] = true;
+		fringeQueue.add(new GreedyBestFirstVertex(start.x, start.y, 0, heuristic, null));
+		fringe[start.x][start.y] = true;
 	}
-
 }

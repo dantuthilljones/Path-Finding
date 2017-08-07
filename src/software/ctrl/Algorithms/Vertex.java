@@ -1,12 +1,13 @@
 package software.ctrl.Algorithms;
 
-public class Vertex {
+import java.awt.Point;
+
+public class Vertex extends Point {
 	
-	public final int x, y, depth;
+	public final int depth;
 	
 	public Vertex(int x, int y, int depth) {
-		this.x = x;
-		this.y = y;
+		super(x, y);
 		this.depth = depth;
 	}
 }

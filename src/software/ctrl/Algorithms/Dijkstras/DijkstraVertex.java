@@ -15,6 +15,6 @@ public class DijkstraVertex extends Vertex implements Comparable<DijkstraVertex>
 
 	@Override
 	public int compareTo(DijkstraVertex v) {
-		return Double.compare(distanceStart, v.distanceStart);
+		return java.lang.Double.compare(distanceStart, v.distanceStart);
 	}
 }

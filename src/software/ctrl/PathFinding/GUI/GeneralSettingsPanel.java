@@ -20,29 +20,34 @@ public class GeneralSettingsPanel extends JPanel {
 		setBorder(BorderFactory.createMatteBorder(1, 1, 0, 1, Color.BLACK));
 		
 		JPanel content = new JPanel();
-		content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		//content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		//content.setBorder(BorderFactory.createMatteBorder(1, 1, 0, 1, Color.BLACK));
 		
 		content.setLayout(new GridLayout( 1, 3, 10, 10));
-		content.setBackground(Color.green);
+		//content.setBackground(Color.green);
 		
 		randomButton = new JButton(pfw.diceIcon);
 		randomButton.setToolTipText("Generate random maze");
 		randomButton.setFocusable(false);
 		randomButton.setMaximumSize(new Dimension(69, 69));
-		//content.add(randomButton);
+		content.add(randomButton);
 		
 		clearButton = new JButton(pfw.demolishIcon);
 		clearButton.setToolTipText("Clear maze");
 		clearButton.setFocusable(false);
 		clearButton.setMaximumSize(new Dimension(69, 69));
-		//content.add(clearButton);
+		clearButton.addActionListener(e -> {
+			pfw.getMap().demolish();
+			pfw.repaintMap();
+		});
+		content.add(clearButton);
 		
 		focusButton = new JButton(pfw.focusIcon);
 		focusButton.setToolTipText("Focus maze");
 		focusButton.setFocusable(false);
 		focusButton.setMaximumSize(new Dimension(69, 69));
-		//content.add(focusButton);
+		focusButton.addActionListener(e -> pfw.focusMap());
+		content.add(focusButton);
 		
 		add(content, BorderLayout.CENTER);
 	}

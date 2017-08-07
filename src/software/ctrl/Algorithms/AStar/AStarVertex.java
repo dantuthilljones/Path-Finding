@@ -20,6 +20,6 @@ public class AStarVertex extends Vertex implements Comparable<AStarVertex> {
 
 	@Override
 	public int compareTo(AStarVertex v) {
-		return Double.compare(distanceGoal + distanceStart, v.distanceGoal + v.distanceStart);
+		return java.lang.Double.compare(distanceGoal + distanceStart, v.distanceGoal + v.distanceStart);
 	}
 }

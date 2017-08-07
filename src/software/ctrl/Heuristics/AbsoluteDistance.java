@@ -1,5 +1,7 @@
 package software.ctrl.Heuristics;
 
+import java.awt.Point;
+
 import software.ctrl.Algorithms.Heuristic;
 import software.ctrl.Algorithms.Vertex;
 
@@ -10,6 +12,11 @@ public class AbsoluteDistance implements Heuristic {
 	public AbsoluteDistance(int goalX, int goalY) {
 		this.goalX = goalX;
 		this.goalY = goalY;
+	}
+	
+	public AbsoluteDistance(Point goal) {
+		goalX = goal.x;
+		goalY = goal.y;
 	}
 	
 	@Override

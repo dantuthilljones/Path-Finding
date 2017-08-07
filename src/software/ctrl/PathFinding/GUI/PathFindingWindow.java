@@ -125,4 +125,9 @@ public class PathFindingWindow extends JFrame {
 		heuristicInfo.setVisible(true);
 	}
 
+	public void focusMap() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

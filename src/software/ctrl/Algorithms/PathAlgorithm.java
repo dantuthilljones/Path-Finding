@@ -21,8 +21,8 @@ public abstract class PathAlgorithm {
 		running = false;
 		
 		this.map = map;
-		visitedNodes = new boolean[map.x][map.y];
-		fringe = new boolean[map.x][map.y];
+		visitedNodes = new boolean[map.getWidth()][map.getHeight()];
+		fringe = new boolean[map.getWidth()][map.getHeight()];
 	}
 	
 	public boolean isRunning() {
@@ -64,8 +64,8 @@ public abstract class PathAlgorithm {
 	}
 	
 	public void reset() {
-		visitedNodes = new boolean[map.x][map.y];
-		fringe = new boolean[map.x][map.y];
+		visitedNodes = new boolean[map.getWidth()][map.getHeight()];
+		fringe = new boolean[map.getWidth()][map.getHeight()];
 		currentVertex = null;
 		running = false;
 		iterations = 0;

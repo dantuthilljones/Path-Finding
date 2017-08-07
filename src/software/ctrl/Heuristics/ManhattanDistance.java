@@ -1,5 +1,7 @@
 package software.ctrl.Heuristics;
 
+import java.awt.Point;
+
 import software.ctrl.Algorithms.Heuristic;
 import software.ctrl.Algorithms.Vertex;
 
@@ -10,6 +12,11 @@ public class ManhattanDistance implements Heuristic {
 	public ManhattanDistance(int goalX, int goalY) {
 		this.goalX = goalX;
 		this.goalY = goalY;
+	}
+	
+	public ManhattanDistance(Point goal) {
+		goalX = goal.x;
+		goalY = goal.y;
 	}
 
 	@Override

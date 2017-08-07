@@ -37,18 +37,24 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 	private Map map;
 
 	private double offsetX, offsetY, scale;
-	private int currentX, currentY, selectedX, selectedY;
+	private Point hoveringPoint, selectedPoint;
 
-	private boolean drawCurrent, drawSelected, holdingStart, holdingGoal;
+	private boolean drawHovering;//draw the corner that the mouse is currently hovering over
+	private boolean drawSelected;//draw the corner that we have selected
+	private boolean holdingStart;//if the user is dragging the start location
+	private boolean holdingGoal;//if the user is dragging the goal location
 
 	private PathAlgorithm algorithm;
-	
+
 	private final PathFindingWindow pfw;
 
 	public MapPanel(Map map, PathFindingWindow pfw) {
 		this.pfw = pfw;
 		this.map = map;
 		setScale(30);
+
+		hoveringPoint = new Point();
+		selectedPoint = new Point();
 
 		addMouseWheelListener(this);
 		addMouseMotionListener(this);
@@ -67,24 +73,24 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 		g.fillRect(0, 0, getWidth(), getHeight());
 
 		g.setColor(Color.LIGHT_GRAY);
-		g.fillRect((int) offsetX + 2, offsetY + 2, map.x*scale, map.y*scale);
+		g.fillRect((int) offsetX + 2, offsetY + 2, map.getWidth()*scale, map.getHeight()*scale);
 
 		g.setColor(Color.GRAY);
 		g.setStroke(stroke1);
 
 		//draw horizontal guide lines
-		for(int i = 1; i <= map.x; i++) {
+		for(int i = 1; i <= map.getWidth(); i++) {
 			int newX = offsetX + (i * scale +1);
-			g.drawLine(newX, offsetY +  1, newX, offsetY + (map.y*scale));
+			g.drawLine(newX, offsetY +  1, newX, offsetY + (map.getHeight()*scale));
 		}
 
 		//draw vertical guide lines
-		for(int j = 1; j <= map.y; j++) {
+		for(int j = 1; j <= map.getHeight(); j++) {
 			int newY = offsetY + (j * scale +1);
-			g.drawLine(offsetX + 1, newY, offsetX + (map.x*scale), newY);
+			g.drawLine(offsetX + 1, newY, offsetX + (map.getWidth()*scale), newY);
 		}
-		
-		
+
+
 		//draw fringe and visited nodes
 		if(algorithm != null) {
 			boolean[][] visited = algorithm.getVisitedNodes();
@@ -92,8 +98,8 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 
 			if(visited != null && fringe != null) {
 
-				for(int i = 0; i < map.x; i++) {
-					for(int j = 0; j < map.y; j++) {
+				for(int i = 0; i < map.getWidth(); i++) {
+					for(int j = 0; j < map.getHeight(); j++) {
 						if(visited[i][j]) {
 							g.setColor(Color.ORANGE);
 							g.fillRect(offsetX + (i*scale +2), offsetY + (j*scale +2), scale-1, scale -1);
@@ -104,7 +110,7 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 					}
 				}
 			}
-			
+
 			ArrayList<Vertex> path = algorithm.getPath();
 			if(path != null) {
 				g.setColor(Color.WHITE);
@@ -116,30 +122,32 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 				}
 			}
 		}
-		
+
 		int reduce =  scale/6;
-		
 		//draw start
 		g.setColor(Color.GREEN);
-		g.fillRect(offsetX + map.startX*scale +2 + reduce, offsetY + map.startY*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
+		Point start = map.getStart();
+		g.fillRect(offsetX + start.x*scale +2 + reduce, offsetY + start.y*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
 
 		//draw goal
 		g.setColor(Color.RED);
-		g.fillRect(offsetX + map.goalX*scale +2 + reduce, offsetY + map.goalY*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
+		Point goal = map.getGoal();
+		g.fillRect(offsetX + goal.x*scale +2 + reduce, offsetY + goal.y*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
 
+
+		//draw maze walls
 		g.setStroke(stroke3);
 		g.setColor(Color.BLACK);
-		for(int i = 0; i <= map.x; i++) {
-			for(int j = 0; j <= map.y; j++) {
+		for(int i = 0; i <= map.getWidth(); i++) {
+			for(int j = 0; j <= map.getHeight(); j++) {
 
-				//draw maze walls;
-				if(map.walls[i][j][Map.HORIZONTAL]) {
+				if(map.isWall(i,j,Map.HORIZONTAL)) {
 					int newX = offsetX + (i * scale +1);
 					int newY = offsetY + (j * scale +1);
 					g.drawLine(newX, newY, newX + scale, newY);
 				}
 
-				if(map.walls[i][j][Map.VERTICAL]) {
+				if(map.isWall(i,j,Map.VERTICAL)) {
 					int newX = offsetX + (i * scale +1);
 					int newY = offsetY + (j * scale +1);
 					g.drawLine(newX, newY, newX, newY + scale);
@@ -148,62 +156,65 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 		}
 
 		//draw example lines
-		if(drawCurrent && drawSelected) {
-			if(currentY == selectedY){
-				if(currentX == selectedX +1) { //draw example horizontal right
-					if(map.walls[selectedX][selectedY][Map.HORIZONTAL]) {
+		if(drawHovering && drawSelected) {
+			if(hoveringPoint.y == selectedPoint.y){
+				//draw example horizontal right
+				if(hoveringPoint.x == selectedPoint.x +1) {
+					if(map.isWall(selectedPoint.x,selectedPoint.y,Map.HORIZONTAL)) {
 						g.setColor(DARK_RED);
 					} else {
 						g.setColor(DARK_GREEN);
 					}
-					int newX = offsetX + (selectedX * scale +1);
-					int newY = offsetY + (selectedY * scale +1);
+					int newX = offsetX + (selectedPoint.x * scale +1);
+					int newY = offsetY + (selectedPoint.y * scale +1);
 					g.drawLine(newX, newY, newX + scale, newY);
-				} else if(currentX == selectedX -1) { //draw example horizontal left
-					if(map.walls[currentX][selectedY][Map.HORIZONTAL]) {
+
+					//draw example horizontal left
+				} else if(hoveringPoint.x == selectedPoint.x -1) {
+					if(map.isWall(hoveringPoint.x,selectedPoint.y,Map.HORIZONTAL)) {
 						g.setColor(DARK_RED);
 					} else {
 						g.setColor(DARK_GREEN);
 					}
-					int newX = offsetX + ((selectedX-1) * scale +1);
-					int newY = offsetY + (selectedY * scale +1);
+					int newX = offsetX + ((selectedPoint.x-1) * scale +1);
+					int newY = offsetY + (selectedPoint.y * scale +1);
 					g.drawLine(newX, newY, newX + scale, newY);
 				}
-			} else if(currentX == selectedX){
-				if(currentY == selectedY +1) { //draw example vertical down
-					if(map.walls[selectedX][selectedY][Map.VERTICAL]) {
+			} else if(hoveringPoint.x == selectedPoint.x){
+				if(hoveringPoint.y == selectedPoint.y +1) { //draw example vertical down
+					if(map.isWall(selectedPoint.x,selectedPoint.y,Map.VERTICAL)) {
 						g.setColor(DARK_RED);
 					} else {
 						g.setColor(DARK_GREEN);
 					}
-					int newY = offsetY + (selectedY * scale +1);
-					int newX = offsetX + (selectedX * scale +1);
+					int newY = offsetY + (selectedPoint.y * scale +1);
+					int newX = offsetX + (selectedPoint.x * scale +1);
 					g.drawLine(newX, newY, newX, newY + scale);
-				} else if(currentY == selectedY -1) { //draw example vertical up
-					if(map.walls[selectedX][currentY][Map.VERTICAL]) {
+				} else if(hoveringPoint.y == selectedPoint.y -1) { //draw example vertical up
+					if(map.isWall(selectedPoint.x,hoveringPoint.y,Map.VERTICAL)) {
 						g.setColor(DARK_RED);
 					} else {
 						g.setColor(DARK_GREEN);
 					}
-					int newY = offsetY + ((selectedY-1) * scale +1);
-					int newX = offsetX + (selectedX * scale +1);
+					int newY = offsetY + ((selectedPoint.y-1) * scale +1);
+					int newX = offsetX + (selectedPoint.x * scale +1);
 					g.drawLine(newX, newY, newX, newY + scale);
 				}
 			}
 		}
 
 		//draw current circle
-		if(drawCurrent && currentX <= map.x && currentX >=0 && currentY <= map.y && currentY >= 0) {
+		if(drawHovering && hoveringPoint.x <= map.getWidth() && hoveringPoint.x >=0 && hoveringPoint.y <= map.getHeight() && hoveringPoint.y >= 0) {
 			g.setColor(PURPLE);
-			g.fillRect(offsetX + (currentX * scale -3), offsetY + (currentY * scale -3), 9, 9);
+			g.fillRect(offsetX + (hoveringPoint.x * scale -3), offsetY + (hoveringPoint.y * scale -3), 9, 9);
 		}
 
 		//draw selected circle
-		if(drawSelected && selectedX <= map.x && selectedX >=0 && selectedY <= map.y && selectedY >= 0) {
+		if(drawSelected && selectedPoint.x <= map.getWidth() && selectedPoint.x >=0 && selectedPoint.y <= map.getHeight() && selectedPoint.y >= 0) {
 			g.setColor(Color.GREEN);
-			g.fillRect(offsetX + (selectedX * scale -3), offsetY + (selectedY * scale -3), 9, 9);
+			g.fillRect(offsetX + (selectedPoint.x * scale -3), offsetY + (selectedPoint.y * scale -3), 9, 9);
 		}
-		
+
 	}
 
 	public void setMap(Map newMap, boolean rescale) {
@@ -252,19 +263,19 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 
 	public void rescale() {
 		resetOffset();
-		scale = Math.min( (getWidth()-2) / map.x, (getHeight()-2) /map.y);
+		scale = Math.min( (getWidth()-2) / map.getWidth(), (getHeight()-2) /map.getHeight());
 	}
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
-		double scaledX = ( (double) (e.getX() - offsetX)) / (map.x*scale);
-		double scaledY = ( (double) (e.getY() - offsetY)) / (map.y*scale);
+		double scaledX = ( (double) (e.getX() - offsetX)) / (map.getWidth()*scale);
+		double scaledY = ( (double) (e.getY() - offsetY)) / (map.getHeight()*scale);
 
 		scale *= (1d - 0.1*e.getWheelRotation());
 		if(scale < 6d) scale = 6d;
 
-		offsetX = (((double) e.getX()) - (scaledX*map.x*scale));
-		offsetY = (((double) e.getY()) - (scaledY*map.y*scale));
+		offsetX = (((double) e.getX()) - (scaledX*map.getWidth()*scale));
+		offsetY = (((double) e.getY()) - (scaledY*map.getHeight()*scale));
 
 		repaint();
 	}
@@ -278,26 +289,28 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 			repaint();
 		} else if(SwingUtilities.isLeftMouseButton(e)) {
 
-			
 			//if start box
 			if(holdingStart) {	
-				
-				int oldX = map.startX, oldY = map.startY;
-				map.startX = ( (e.getX() - (int)scale/2 - ((int) offsetX) + ((int) scale/2)) / (int) scale);
-				map.startY = ( (e.getY() - (int) scale/2 - ((int) offsetY) + ((int) scale/2)) / (int) scale);		
-				
-				if(oldX != map.startX || oldY != map.startY) {
+				Point oldStart = map.getStart();
+				int x = (e.getX() - (int)scale/2 - ((int) offsetX) + ((int) scale/2)) / (int) scale;
+				int y =  (e.getY() - (int) scale/2 - ((int) offsetY) + ((int) scale/2)) / (int) scale;
+				Point newStart = new Point(x, y);
+
+				if(!newStart.equals(oldStart) && map.pointInBounds(newStart)) {
+					map.setStart(newStart);
 					repaint();
 					pfw.setMap(map, false);
 				}
-				
+
 				//if goal box
 			} else if(holdingGoal) {
-				int oldX = map.goalX, oldY = map.goalY;
-				map.goalX = ( (e.getX() - (int)scale/2 - ((int) offsetX) + ((int) scale/2)) / (int) scale);
-				map.goalY = ( (e.getY() - (int) scale/2 - ((int) offsetY) + ((int) scale/2)) / (int) scale);		
-				
-				if(oldX != map.goalX || oldY != map.goalY) {
+				Point oldGoal = map.getGoal();
+				int x = (e.getX() - (int)scale/2 - ((int) offsetX) + ((int) scale/2)) / (int) scale;
+				int y =  (e.getY() - (int) scale/2 - ((int) offsetY) + ((int) scale/2)) / (int) scale;
+				Point newGoal = new Point(x, y);
+
+				if(!newGoal.equals(oldGoal) && map.pointInBounds(newGoal)) {
+					map.setGoal(newGoal);
 					repaint();
 					pfw.setMap(map, false);
 				}
@@ -316,52 +329,56 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 				int offsetX = (int) this.offsetX;
 				int offsetY = (int) this.offsetY;
 				int scale = (int) this.scale;
-				
-				int reduce = scale/6;
-				
-				//draw start
-				Rectangle start = new Rectangle(offsetX + map.startX*scale +2 + reduce, offsetY + map.startY*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
 
-				//draw goal
-				Rectangle goal = new Rectangle(offsetX + map.goalX*scale +2 + reduce, offsetY + map.goalY*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
-				
+				int reduce = scale/6;
+
+				//start box
+				Point start = map.getStart();
+				Rectangle startRect = new Rectangle(offsetX + start.x*scale +2 + reduce, offsetY + start.y*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
+
+				//goal box
+				Point goal = map.getGoal();
+				Rectangle goalRect = new Rectangle(offsetX + goal.x*scale +2 + reduce, offsetY + goal.y*scale +2 + reduce, scale -1 -reduce*2, scale -1 -reduce*2);
+
 				//if start box
-				if(start.contains(mousePoint)) {
+				if(startRect.contains(mousePoint)) {
 					holdingStart = true;
 					holdingGoal = false;
-					
+
 					//if goal box
-				} else if(goal.contains(mousePoint)) {
+				} else if(goalRect.contains(mousePoint)) {
 					holdingStart = false;
 					holdingGoal = true;
-					
-				//if near a corner
-				} else if(Math.pow(Math.pow(offsetX + (currentX * scale -3) - e.getX(), 2) + Math.pow(offsetY + (currentY * scale -3) - e.getY(), 2), 0.5) < scale/2) {
 
-					if(currentX == selectedX && currentY == selectedY) {
+					//if near a corner
+				} else if(Math.pow(Math.pow(offsetX + (hoveringPoint.x * scale -3) - e.getX(), 2) + Math.pow(offsetY + (hoveringPoint.y * scale -3) - e.getY(), 2), 0.5) < scale/2) {
+
+					if(hoveringPoint.x == selectedPoint.x && hoveringPoint.y == selectedPoint.y) {
 						drawSelected = !drawSelected;
 					} else {
-
-						if(drawCurrent && drawSelected) {
-
-							if(currentY == selectedY){
-								if(currentX == selectedX +1) { //horizontal rightf
-									map.walls[selectedX][selectedY][Map.HORIZONTAL] = !map.walls[selectedX][selectedY][Map.HORIZONTAL];
-								} else if(currentX == selectedX -1) { //horizontal left
-									map.walls[currentX][selectedY][Map.HORIZONTAL] = !map.walls[currentX][selectedY][Map.HORIZONTAL];
+						if(drawHovering && drawSelected) {
+							if(hoveringPoint.y == selectedPoint.y) {
+								if(hoveringPoint.x == selectedPoint.x +1 && !map.isBorderWall(selectedPoint.x, selectedPoint.y, Map.HORIZONTAL)) {
+									//horizontal right
+									map.toggleWall(selectedPoint.x, selectedPoint.y, Map.HORIZONTAL);
+								} else if(hoveringPoint.x == selectedPoint.x -1 && !map.isBorderWall(hoveringPoint.x, selectedPoint.y, Map.HORIZONTAL)) {
+									//horizontal left
+									map.toggleWall(hoveringPoint.x, selectedPoint.y, Map.HORIZONTAL);
 								}
-							} else if(currentX == selectedX){
-								if(currentY == selectedY +1) { //vertical down
-									map.walls[selectedX][selectedY][Map.VERTICAL] = !map.walls[selectedX][selectedY][Map.VERTICAL];
-								} else if(currentY == selectedY -1) { //vertical up
-									map.walls[selectedX][currentY][Map.VERTICAL] = !map.walls[selectedX][currentY][Map.VERTICAL];
+							} else if(hoveringPoint.x == selectedPoint.x) {
+								if(hoveringPoint.y == selectedPoint.y +1 && !map.isBorderWall(selectedPoint.x, selectedPoint.y, Map.VERTICAL)) {
+									//vertical down
+									map.toggleWall(selectedPoint.x, selectedPoint.y, Map.VERTICAL);
+								} else if(hoveringPoint.y == selectedPoint.y -1 && !map.isBorderWall(selectedPoint.x, hoveringPoint.y, Map.VERTICAL)) {
+									//vertical up
+									map.toggleWall(selectedPoint.x, hoveringPoint.y, Map.VERTICAL);
 								}
 							}
 						}
-
-						selectedX = currentX;
-						selectedY = currentY;
-						drawSelected = true;
+						if(map.pointInBounds(hoveringPoint)) {
+							selectedPoint.setLocation(hoveringPoint);
+							drawSelected = true;
+						}
 					}
 					repaint();
 				}
@@ -371,9 +388,9 @@ public class MapPanel extends JPanel implements MouseWheelListener, MouseMotionL
 
 	@Override
 	public void mouseMoved(MouseEvent e) {
-		currentX = ( (e.getX() - ((int) offsetX) + ((int) scale/2)) / (int) scale);
-		currentY = ( (e.getY() - ((int) offsetY) + ((int) scale/2)) / (int) scale);
-		drawCurrent = Math.pow(Math.pow(offsetX + (currentX * scale -3) - e.getX(), 2) + Math.pow(offsetY + (currentY * scale -3) - e.getY(), 2), 0.5) < scale/2;
+		hoveringPoint.x = ( (e.getX() - ((int) offsetX) + ((int) scale/2)) / (int) scale);
+		hoveringPoint.y = ( (e.getY() - ((int) offsetY) + ((int) scale/2)) / (int) scale);
+		drawHovering = Math.pow(Math.pow(offsetX + (hoveringPoint.x * scale -3) - e.getX(), 2) + Math.pow(offsetY + (hoveringPoint.y * scale -3) - e.getY(), 2), 0.5) < scale/2;
 
 		repaint();
 	}
